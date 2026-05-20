@@ -1,0 +1,87 @@
+/**
+ * Welcome to Cloudflare Workers! This is your first worker.
+ *
+ * - Run `npm run dev` in your terminal to start a development server
+ * - Open a browser tab at http://localhost:8787/ to see your worker in action
+ * - Run `npm run deploy` to publish your worker
+ *
+ * Learn more at https://developers.cloudflare.com/workers/
+ */
+
+// export default {
+// 	async fetch(request, env, ctx) {
+// 		return new Response("Hello World!");
+// 	},
+// };
+
+
+import { AutoRouter } from 'itty-router';
+import {
+  InteractionType,
+  InteractionResponseType,
+  verifyKey,
+} from 'discord-interactions';
+
+const router = AutoRouter();
+
+class JsonResponse extends Response {
+  constructor(body, init = {}) {
+    super(JSON.stringify(body), {
+      ...init,
+      headers: {
+        'content-type': 'application/json;charset=UTF-8',
+      },
+    });
+  }
+}
+
+router.get('/', () => {
+  return new Response('Discord bot is running');
+});
+
+router.post('/', async (request, env) => {
+  const signature = request.headers.get('x-signature-ed25519');
+  const timestamp = request.headers.get('x-signature-timestamp');
+  const body = await request.text();
+
+  const isValidRequest =
+    signature &&
+    timestamp &&
+    (await verifyKey(
+      body,
+      signature,
+      timestamp,
+      env.DISCORD_PUBLIC_KEY
+    ));
+
+  if (!isValidRequest) {
+    return new Response('Bad request signature.', { status: 401 });
+  }
+
+  const interaction = JSON.parse(body);
+
+  // Discord webhook verification
+  if (interaction.type === InteractionType.PING) {
+    return new JsonResponse({
+      type: InteractionResponseType.PONG,
+    });
+  }
+
+  // Slash commands
+  if (interaction.type === InteractionType.APPLICATION_COMMAND) {
+    if (interaction.data.name === 'test') {
+      return new JsonResponse({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: 'hello world',
+        },
+      });
+    }
+  }
+
+  return new Response('Not found', { status: 404 });
+});
+
+export default {
+  fetch: router.fetch,
+};
