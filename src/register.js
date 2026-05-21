@@ -1,4 +1,4 @@
-import { TEST_COMMAND } from './commands.js';
+import { TEST_COMMAND, CREATE_NOTE_COMMAND, LIST_NOTES_COMMAND, UPDATE_NOTE_COMMAND, DELETE_NOTE_COMMAND } from './commands.js';
 import dotenv from 'dotenv';
 import process from 'node:process';
 
@@ -34,7 +34,7 @@ const response = await fetch(url, {
     Authorization: `Bot ${token}`,
   },
   method: 'PUT',
-  body: JSON.stringify([TEST_COMMAND]),
+  body: JSON.stringify([TEST_COMMAND, CREATE_NOTE_COMMAND, LIST_NOTES_COMMAND, UPDATE_NOTE_COMMAND, DELETE_NOTE_COMMAND]),
 });
 
 if (response.ok) {

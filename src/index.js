@@ -14,13 +14,21 @@
 // 	},
 // };
 
-
+/**
+ * The core server that runs on a Cloudflare worker.
+ */
 import { AutoRouter } from 'itty-router';
 import {
   InteractionType,
   InteractionResponseType,
   verifyKey,
 } from 'discord-interactions';
+import {
+  createNote,
+  getNotes,
+  updateNote,
+  deleteNote,
+} from './db.js';
 
 const router = AutoRouter();
 
@@ -69,11 +77,96 @@ router.post('/', async (request, env) => {
 
   // Slash commands
   if (interaction.type === InteractionType.APPLICATION_COMMAND) {
-    if (interaction.data.name === 'test') {
+
+    const { name, options = [] } = interaction.data;
+
+    const userId = interaction.member.user.id;
+
+    function getOption(name) {
+      return options.find(o => o.name === name)?.value;
+    }
+
+    // TEST COMMAND
+    if (name === 'test') {
       return new JsonResponse({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
           content: 'hello world',
+        },
+      });
+    }
+
+    // CREATE NOTE
+    if (name === 'create') {
+
+      const title = getOption('title');
+      const content = getOption('content');
+
+      await createNote(env.DB, userId, title, content);
+
+      return new JsonResponse({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: `Created note "${title}"`,
+        },
+      });
+    }
+
+    // LIST NOTES
+    if (name === 'list') {
+
+      const notes = await getNotes(env.DB, userId);
+
+      if (notes.length === 0) {
+        return new JsonResponse({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: 'No notes found.',
+          },
+        });
+      }
+
+      const text = notes
+        .map(note =>
+          `#${note.id} - ${note.title}\n${note.content}`
+        )
+        .join('\n\n');
+
+      return new JsonResponse({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: text,
+        },
+      });
+    }
+
+    // UPDATE NOTE
+    if (name === 'update') {
+
+      const id = getOption('id');
+      const content = getOption('content');
+
+      await updateNote(env.DB, id, content);
+
+      return new JsonResponse({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: `Updated note #${id}`,
+        },
+      });
+    }
+
+    // DELETE NOTE
+    if (name === 'delete') {
+
+      const id = getOption('id');
+
+      await deleteNote(env.DB, id);
+
+      return new JsonResponse({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: `Deleted note #${id}`,
         },
       });
     }
