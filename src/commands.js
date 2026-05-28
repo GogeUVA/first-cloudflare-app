@@ -58,3 +58,22 @@ export const DELETE_NOTE_COMMAND = {
     },
   ],
 };
+
+export const WEATHER_COMMAND = {
+  name: 'weather',
+  description: 'Get current weather',
+  options: [
+    {
+      name: 'city',
+      description: 'City name',
+      type: 3,
+      required: true,
+    },
+    {
+      name: 'state',
+      description: 'State abbreviation',
+      type: 3,
+      required: true,
+    },
+  ],
+};

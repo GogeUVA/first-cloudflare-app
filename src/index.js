@@ -29,6 +29,7 @@ import {
   updateNote,
   deleteNote,
 } from './db.js';
+import { getWeather } from './weather.js';
 
 const router = AutoRouter();
 
@@ -170,6 +171,39 @@ router.post('/', async (request, env) => {
         },
       });
     }
+
+    // WEATHER
+    if (name === 'weather') {
+
+      const city = getOption('city');
+      const state = getOption('state');
+
+      try {
+
+        const weather = await getWeather(city, state);
+
+        return new JsonResponse({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content:
+              `Weather for ${weather.city}, ${weather.state}\n\n` +
+              `Temperature: ${weather.temperature}°${weather.unit}\n` +
+              `Wind: ${weather.wind}\n` +
+              `Forecast: ${weather.forecast}`,
+          },
+        });
+
+      } catch (err) {
+
+        return new JsonResponse({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Error: ${err.message}`,
+          },
+        });
+
+      }
+    }    
   }
 
   return new Response('Not found', { status: 404 });
